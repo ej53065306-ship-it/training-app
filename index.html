@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>HOME TRAINING</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#0b0d10">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+:root{
+  --bg:#0b0d10;--card:#15191f;--card2:#1c222a;--text:#f4f7fb;--muted:#99a4b2;
+  --accent:#e8ff3f;--accent2:#bcd400;--line:#2b333d;--danger:#ff6961;--ok:#6fe38f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}
+.app{max-width:720px;margin:auto;padding:18px 14px 100px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.logo{font-weight:900;letter-spacing:.08em}.logo span{color:var(--accent)}
+.badge{font-size:12px;background:var(--card2);padding:7px 10px;border-radius:999px;color:var(--muted)}
+h1{font-size:28px;margin:8px 0 4px} .sub{color:var(--muted);font-size:14px;margin-bottom:20px}
+.daygrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;cursor:pointer}
+.day.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.day .num{font-size:11px;color:var(--accent);font-weight:800}.day h3{margin:6px 0 3px;font-size:17px}.day p{margin:0;color:var(--muted);font-size:12px}
+.section-title{margin:24px 2px 10px;font-size:14px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.exercise{background:var(--card);border:1px solid var(--line);border-radius:18px;margin-bottom:12px;overflow:hidden}
+.exhead{padding:16px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.exnum{width:28px;height:28px;min-width:28px;border-radius:9px;background:var(--accent);color:#111;display:grid;place-items:center;font-weight:900}
+.exinfo{flex:1}.exinfo h3{margin:1px 0 4px;font-size:16px}.target{font-size:12px;color:var(--muted)}
+.pill{font-size:11px;border:1px solid var(--line);padding:5px 7px;border-radius:8px;color:var(--muted)}
+.guide{border-top:1px solid var(--line);padding:12px 16px;background:#11151a}
+.guide summary{cursor:pointer;color:var(--accent);font-size:13px;font-weight:700}
+.guide p{font-size:13px;line-height:1.65;color:#c9d0d8;margin:10px 0 2px}
+.sets{padding:0 16px 16px}
+.setrow{display:grid;grid-template-columns:34px 1fr 1fr 70px;gap:8px;align-items:center;margin-top:9px}
+.setno{color:var(--muted);font-size:12px}
+input{width:100%;background:var(--card2);border:1px solid var(--line);color:white;border-radius:10px;padding:11px 8px;font-size:16px;text-align:center}
+.done{border:0;border-radius:10px;background:#303842;color:white;font-weight:800;height:43px}
+.done.completed{background:var(--accent);color:#111}
+.prev{font-size:11px;color:var(--muted);margin-top:10px}
+.timer{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;width:calc(100% - 28px);max-width:692px;background:#20262e;border:1px solid #3a444f;border-radius:18px;padding:12px 14px;display:none;align-items:center;gap:12px;box-shadow:0 8px 30px #0008;z-index:20}
+.timer.show{display:flex}.time{font-size:28px;font-weight:900;color:var(--accent);min-width:82px}.timer .tinfo{flex:1;font-size:12px;color:var(--muted)}button{cursor:pointer}
+.smallbtn{border:1px solid var(--line);background:#15191f;color:white;border-radius:10px;padding:9px}
+.history{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-top:10px}
+.history button{width:100%;background:var(--card2);color:white;border:1px solid var(--line);border-radius:12px;padding:12px;font-weight:700}
+.note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:18px}
+@media(max-width:430px){.setrow{grid-template-columns:28px 1fr 1fr 62px}.daygrid{gap:8px}.day{padding:13px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="logo">HOME <span>TRAINING</span></div><div class="badge">40kg DB × 2</div></header>
+<h1 id="title">トレーニング</h1>
+<div class="sub">1種目の全セットを終えてから次へ。セット完了で90秒レストが自動スタートします。完了後は「取消」で記録を戻せます。</div>
+<div class="daygrid" id="days"></div>
+<div class="section-title">Today's exercises</div>
+<div id="exercises"></div>
+<div class="history">
+<button onclick="exportRecords()" style="margin-bottom:8px">⬇ 記録をバックアップ</button>
+<button onclick="document.getElementById('importFile').click()" style="margin-bottom:8px">⬆ 記録を復元</button>
+<input id="importFile" type="file" accept=".json,application/json" style="display:none" onchange="importRecords(this)">
+<button onclick="showHistory()">📅 カレンダーから記録を見る</button>
+<div id="historyBox"></div>
+</div>
+<div class="note">記録はこのサイトのブラウザ内に保存されます。機種変更やサイトの移転に備えてバックアップしてください。ブラウザのデータを削除すると記録も消えるため、重要な記録は定期的にスクリーンショット等で残してください。</div>
+</div>
+<div class="timer" id="timer">
+<div class="time" id="time">03:00</div>
+<div class="tinfo"><b id="timerName">REST</b><br>次セットまで</div>
+<button class="smallbtn" onclick="addTime(30)">+30秒</button>
+<button class="smallbtn" onclick="stopTimer()">終了</button>
+</div>
+<script>
+const plans=[
+ {name:"胸＋三頭",desc:"PUSH",ex:[
+  ["ダンベルベンチプレス","大胸筋・三頭筋","6〜10回 × 3","180","肩甲骨を軽く寄せて胸を張る。肘を開きすぎず、胸の横までゆっくり下ろして押し上げる。"],
+  ["リバースグリップ・DBプレス","大胸筋鎖骨部","8〜12回 × 3","120","手のひらを顔側に向ける逆手。肘を体側寄りに保ち、胸上部を意識して押す。無理に手首を反らさない。"],
+  ["ダンベルフライ","大胸筋・伸長位","10〜15回 × 3","90","肘を軽く曲げたまま固定し、胸を開くように弧を描いて下ろす。肩前面に痛みが出る深さまで下げない。"],
+  ["ディップス（前傾）","大胸筋下部・三頭筋","6〜12回 × 3","120","上体を少し前傾。胸を張り、肩がすくまない範囲まで下降して押し上げる。"],
+  ["オーバーヘッドDB三頭伸展","上腕三頭筋・長頭","10〜15回 × 3","90","DB1個を両手で頭上に持つ。肘を上向きに保ち、頭の後ろへ下ろして三頭筋を伸ばし、肘を伸ばす。"]
+ ]},
+ {name:"背中＋二頭＋腹",desc:"PULL",ex:[
+  ["懸垂","広背筋・上腕二頭筋","6〜10回 × 3","180","肩をすくめず、胸をバーへ近づける意識。反動を抑えて下までコントロールする。"],
+  ["ワンハンドDBロー","広背筋・僧帽筋・菱形筋","8〜12回 × 3/側","120","片手・片膝をベッドへ。背中を安定させ、肘を腰・お尻方向へ引く。体幹を大きく捻らない。"],
+  ["ダンベルプルオーバー","広背筋","10〜15回 × 3","90","仰向けでDB1個を両手に。肘を軽く曲げたまま頭後方へ下ろし、肩関節を中心に弧を描いて戻す。"],
+  ["ダンベルカール","上腕二頭筋","8〜12回 × 3","90","肘を体側付近に保ち、反動を使わず曲げる。下ろしもコントロールする。"],
+  ["ハンマーカール","上腕筋・腕橈骨筋","8〜12回 × 2","90","手のひらを内向きのまま曲げる。肘が前へ大きく動かないようにする。"],
+  ["アブローラー","腹直筋・体幹","6〜15回 × 3","90","腰を反らせず、肋骨と骨盤を近づける意識を保ったまま前へ。フォームを維持できる範囲だけ伸ばす。"]
+ ]},
+ {name:"脚",desc:"LEGS",ex:[
+  ["ダンベルスクワット","大腿四頭筋・大殿筋","8〜12回 × 3","180","足裏全体で床を押す。膝とつま先の方向を合わせ、腰が丸まらない範囲までしゃがむ。"],
+  ["ブルガリアンスクワット","大殿筋・大腿四頭筋","8〜12回 × 3/脚","180","後ろ足をベッドへ。前脚に荷重し、膝とつま先を同方向に保って上下する。"],
+  ["ルーマニアンデッドリフト","ハムストリングス・大殿筋","8〜12回 × 3","180","膝を軽く曲げ、お尻を後方へ引く。腿裏が伸びる位置まで下げ、股関節を伸ばして立つ。"],
+  ["ダンベルヒップスラスト","大殿筋","8〜15回 × 3","120","背中上部をベッドへ。踵で床を押して股関節を伸ばし、頂点で臀部を締める。腰を過度に反らさない。"],
+  ["カーフレイズ","腓腹筋・ヒラメ筋","10〜20回 × 3","90","踵を十分下げてから母趾球で床を押し、できるだけ高く踵を上げる。反動を使わない。"]
+ ]},
+ {name:"肩＋腹",desc:"SHOULDERS / CORE",ex:[
+  ["DBショルダープレス","三角筋前部・中部","6〜10回 × 3","180","DBを肩の横から頭上へ。腰を強く反らさず、前腕を安定させて押す。"],
+  ["サイドレイズ","三角筋中部","10〜20回 × 3","90","軽く肘を曲げ、腕を横へ。肩をすくめず、反動を抑える。"],
+  ["ベントオーバー・リアレイズ","三角筋後部","12〜20回 × 3","90","股関節から前傾し、腕を左右へ開く。肩甲骨を過剰に寄せず後部三角筋で動かす。"],
+  ["ダンベルシュラッグ","僧帽筋上部","8〜15回 × 3","90","DBを体側に持ち、肩を耳へ近づけるように真上へ上げる。肩を回さない。"],
+  ["ハンギングレッグレイズ","腹直筋・体幹","8〜15回 × 3","90","懸垂器にぶら下がり脚を上げ、最後に骨盤を後傾させて巻き上げる。難しければ膝を曲げる。"],
+  ["ダンベルサイドベント","腹斜筋","10〜15回 × 2/側","75","DBを片手に持ち、体幹を真横へ倒して戻す。前後に傾かない。"]
+ ]}
+];
+let selected=0, timerId=null, remain=0;
+const key="homeTrainingLogV1";
+function getLog(){return JSON.parse(localStorage.getItem(key)||"[]")}
+function saveLog(x){const a=getLog();a.push(x);localStorage.setItem(key,JSON.stringify(a))}
+function renderDays(){
+ const el=document.getElementById("days");el.innerHTML="";
+ plans.forEach((p,i)=>{let d=document.createElement("div");d.className="day "+(i===selected?"active":"");d.innerHTML=`<div class="num">DAY ${i+1}</div><h3>${p.name}</h3><p>${p.desc}</p>`;d.onclick=()=>{selected=i;render()};el.appendChild(d)})
+}
+function setCount(s){let m=s.match(/×\s*(\d+)/);return m?+m[1]:3}
+function isUnilateral(name){return name==="ブルガリアンスクワット"||name==="ワンハンドDBロー"}
+function sideUnit(name){return name==="ワンハンドDBロー"?"腕":"脚"}
+function renderExercises(){
+ const root=document.getElementById("exercises");root.innerHTML="";
+ plans[selected].ex.forEach((e,ei)=>{
+  let box=document.createElement("div");box.className="exercise";let sets=setCount(e[2]),rows="";
+  if(isUnilateral(e[0])){for(let s=1;s<=sets;s++){rows+=`<div style="margin-top:12px;font-size:12px;color:var(--muted);font-weight:700">SET ${s}</div>`;["右","左"].forEach(side=>{rows+=`<div class="setrow"><div class="setno">${side}</div><input inputmode="decimal" placeholder="kg" id="w-${ei}-${s}-${side}"><input inputmode="numeric" placeholder="回" id="r-${ei}-${s}-${side}"><button class="done" id="b-${ei}-${s}-${side}" onclick="completeSet(${ei},${s},'${side}')">完了</button></div>`})}}
+  else{for(let s=1;s<=sets;s++)rows+=`<div class="setrow"><div class="setno">S${s}</div><input inputmode="decimal" placeholder="kg" id="w-${ei}-${s}"><input inputmode="numeric" placeholder="回" id="r-${ei}-${s}"><button class="done" id="b-${ei}-${s}" onclick="completeSet(${ei},${s})">完了</button></div>`}
+  box.innerHTML=`<div class="exhead"><div class="exnum">${ei+1}</div><div class="exinfo"><h3>${e[0]}</h3><div class="target">${e[1]}</div></div><div class="pill">${e[2]}</div></div><details class="guide"><summary>フォームを見る</summary><p>${e[4]}</p></details><div class="sets">${rows}<div class="prev" id="p-${ei}"></div></div>`;root.appendChild(box);showPrev(ei,e[0]);
+ })
+}
+function showPrev(ei,name){let logs=getLog().filter(x=>x.exercise===name);if(!logs.length)return;if(isUnilateral(name)){let rr=logs.filter(x=>x.side==="右"),ll=logs.filter(x=>x.side==="左"),r=rr.at(-1),l=ll.at(-1);document.getElementById("p-"+ei).textContent=`前回：右 ${r?(r.weight||"-")+"kg × "+(r.reps||"-")+"回":"-"} / 左 ${l?(l.weight||"-")+"kg × "+(l.reps||"-")+"回":"-"}`}else{let x=logs.at(-1);document.getElementById("p-"+ei).textContent=`前回：${x.weight||"-"}kg × ${x.reps||"-"}回`}}
+function completeSet(ei,s,side=null){const suf=side?`-${side}`:"",btn=document.getElementById(`b-${ei}-${s}${suf}`),w=document.getElementById(`w-${ei}-${s}${suf}`).value,r=document.getElementById(`r-${ei}-${s}${suf}`).value,ex=plans[selected].ex[ei][0];if(btn.classList.contains("completed")){let a=getLog();for(let i=a.length-1;i>=0;i--){if(a[i].exercise===ex&&a[i].set===s&&(a[i].side||null)===(side||null)){a.splice(i,1);break}}localStorage.setItem(key,JSON.stringify(a));btn.classList.remove("completed");btn.textContent="完了";showPrev(ei,ex);return}saveLog({date:new Date().toLocaleString("ja-JP"),day:plans[selected].name,exercise:ex,set:s,side,weight:w,reps:r});btn.classList.add("completed");btn.textContent="取消";startTimer(90,ex+(side?`（${side}${sideUnit(ex)}）`:""));showPrev(ei,ex)}
+function startTimer(sec,name){clearInterval(timerId);remain=sec;document.getElementById("timerName").textContent=name;document.getElementById("timer").classList.add("show");tick();timerId=setInterval(()=>{remain--;tick();if(remain<=0){clearInterval(timerId);navigator.vibrate&&navigator.vibrate([200,100,200]);}},1000)}
+function tick(){let m=Math.floor(remain/60),s=remain%60;document.getElementById("time").textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`}
+function addTime(x){remain+=x;tick()} function stopTimer(){clearInterval(timerId);document.getElementById("timer").classList.remove("show")}
+
+let calendarMonth=new Date().getFullYear()*12+new Date().getMonth();
+let selectedDate=null;
+function dateKey(x){
+ const m=String(x.date||"").match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+ return m?`${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`:"";
+}
+function showHistory(){renderCalendar()}
+function shiftMonth(n){calendarMonth+=n;selectedDate=null;renderCalendar()}
+function pickDate(d){selectedDate=d;renderCalendar()}
+function renderCalendar(){
+ const y=Math.floor(calendarMonth/12),mo=calendarMonth%12;
+ const first=new Date(y,mo,1).getDay(),days=new Date(y,mo+1,0).getDate();
+ const logs=getLog(),dates=new Set(logs.map(dateKey));
+ let h=`<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0">
+ <button style="width:auto" onclick="shiftMonth(-1)">‹</button><b>${y}年 ${mo+1}月</b><button style="width:auto" onclick="shiftMonth(1)">›</button></div>
+ <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;text-align:center">`;
+ ["日","月","火","水","木","金","土"].forEach(x=>h+=`<div style="color:var(--muted);font-size:12px;padding:6px">${x}</div>`);
+ for(let i=0;i<first;i++)h+="<div></div>";
+ for(let d=1;d<=days;d++){
+  const k=`${y}-${String(mo+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  const has=dates.has(k),sel=selectedDate===k;
+  h+=`<button onclick="pickDate('${k}')" style="width:100%;padding:10px 0;border-radius:10px;border:1px solid ${sel?'var(--accent)':'var(--line)'};background:${sel?'var(--accent)':'var(--card2)'};color:${sel?'#111':'white'}">${d}${has?'<span style="display:block;font-size:9px">●</span>':''}</button>`;
+ }
+ h+="</div>";
+ if(selectedDate){
+  const items=logs.filter(x=>dateKey(x)===selectedDate);
+  h+=`<h3 style="margin-top:18px">${selectedDate.replaceAll("-","/")} の記録</h3>`;
+  h+=items.length?items.map(x=>`<div style="padding:10px 0;border-bottom:1px solid var(--line);font-size:13px"><b>${x.exercise}${x.side?"（"+x.side+"脚）":""}</b><br>${x.weight||"-"}kg × ${x.reps||"-"}回　セット${x.set}</div>`).join(""):'<p class="note">この日の記録はありません。</p>';
+ }else h+='<p class="note">●が付いた日を選ぶと、トレーニング内容を確認できます。</p>';
+ document.getElementById("historyBox").innerHTML=h;
+}
+function exportRecords(){
+ const blob=new Blob([JSON.stringify({app:"home-training",version:1,records:getLog()},null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="training-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+async function importRecords(input){
+ const file=input.files?.[0];if(!file)return;
+ try{
+  const data=JSON.parse(await file.text());
+  if(data.app!=="home-training"||!Array.isArray(data.records)||!data.records.every(x=>x&&typeof x.exercise==="string"&&typeof x.set==="number"))throw Error("形式が異なります");
+  if(!confirm("現在の記録をバックアップファイルの記録で置き換えます。よろしいですか？"))return;
+  localStorage.setItem(key,JSON.stringify(data.records));render();renderCalendar();alert("記録を復元しました");
+ }catch(e){alert("復元できませんでした: "+e.message)}finally{input.value=""}
+}
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+function render(){renderDays();renderExercises();document.getElementById("title").textContent=plans[selected].name}
+render();
+</script>
+</body>
+</html>
